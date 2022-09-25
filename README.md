@@ -4,6 +4,8 @@ ReactQuill [![Build Status](https://travis-ci.org/zenoamaro/react-quill.svg?bran
 
 A [Quill] component for [React].
 
+This fork use quill@2.0.0-dev3
+
 See a [live demo] or [Codepen](http://codepen.io/alexkrolick/pen/xgyOXQ/left?editors=0010#0).
 
 [quill]: https://quilljs.com

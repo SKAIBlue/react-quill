@@ -9,17 +9,18 @@ import isEqual from 'lodash/isEqual';
 
 import Quill, {
   QuillOptionsStatic,
-  DeltaStatic,
   RangeStatic,
   BoundsStatic,
   StringMap,
   Sources,
 } from 'quill';
 
+import Delta from 'quill-delta';
+
 // Merged namespace hack to export types along with default object
 // See: https://github.com/Microsoft/TypeScript/issues/2719
 namespace ReactQuill {
-  export type Value = string | DeltaStatic;
+  export type Value = string | Delta;
   export type Range = RangeStatic | null;
 
   export interface QuillOptions extends QuillOptionsStatic {
@@ -34,27 +35,32 @@ namespace ReactQuill {
     formats?: string[],
     id?: string,
     modules?: StringMap,
+
     onChange?(
       value: string,
-      delta: DeltaStatic,
+      delta: Delta,
       source: Sources,
       editor: UnprivilegedEditor,
     ): void,
+
     onChangeSelection?(
       selection: Range,
       source: Sources,
       editor: UnprivilegedEditor,
     ): void,
+
     onFocus?(
       selection: Range,
       source: Sources,
       editor: UnprivilegedEditor,
     ): void,
+
     onBlur?(
       previousSelection: Range,
       source: Sources,
       editor: UnprivilegedEditor,
     ): void,
+
     onKeyDown?: React.EventHandler<any>,
     onKeyPress?: React.EventHandler<any>,
     onKeyUp?: React.EventHandler<any>,
@@ -70,11 +76,16 @@ namespace ReactQuill {
 
   export interface UnprivilegedEditor {
     getLength(): number;
+
     getText(index?: number, length?: number): string;
+
     getHTML(): string;
+
     getBounds(index: number, length?: number): BoundsStatic;
+
     getSelection(focus?: boolean): RangeStatic;
-    getContents(index?: number, length?: number): DeltaStatic;
+
+    getContents(index?: number, length?: number): Delta;
   }
 }
 
@@ -91,7 +102,7 @@ interface ReactQuillState {
 
 class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
 
-  static displayName = 'React Quill'
+  static displayName = 'React Quill';
 
   /*
   Export Quill to be able to call `register`
@@ -108,7 +119,7 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     'bounds',
     'theme',
     'children',
-  ]
+  ];
 
   /*
   Changing one of these props should cause a regular update. These are mostly
@@ -127,72 +138,72 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     'onKeyPress',
     'onKeyDown',
     'onKeyUp',
-  ]
+  ];
 
   static defaultProps = {
     theme: 'snow',
     modules: {},
     readOnly: false,
-  }
+  };
 
   state: ReactQuillState = {
     generation: 0,
-  }
+  };
 
   /*
   The Quill Editor instance.
   */
-  editor?: Quill
+  editor?: Quill;
 
   /*
   Reference to the element holding the Quill editing area.
   */
-  editingArea?: React.ReactInstance | null
+  editingArea?: React.ReactInstance | null;
 
   /*
   Tracks the internal value of the Quill editor
   */
-  value: Value
+  value: Value;
 
   /*
   Tracks the internal selection of the Quill editor
   */
-  selection: Range = null
+  selection: Range = null;
 
   /*
   Used to compare whether deltas from `onChange` are being used as `value`.
   */
-  lastDeltaChangeSet?: DeltaStatic
+  lastDeltaChangeSet?: Delta;
 
   /*
   Stores the contents of the editor to be restored after regeneration.
   */
   regenerationSnapshot?: {
-    delta: DeltaStatic,
+    delta: Delta,
     selection: Range,
-  }
+  };
 
   /*
   A weaker, unprivileged proxy for the editor that does not allow accidentally
   modifying editor state.
   */
-  unprivilegedEditor?: UnprivilegedEditor
+  unprivilegedEditor?: UnprivilegedEditor;
 
   constructor(props: ReactQuillProps) {
     super(props);
-    const value = this.isControlled()? props.value : props.defaultValue;
+    const value = this.isControlled() ? props.value : props.defaultValue;
     this.value = value ?? '';
   }
 
   validateProps(props: ReactQuillProps): void {
     if (React.Children.count(props.children) > 1) throw new Error(
-      'The Quill editing area can only be composed of a single React element.'
+      'The Quill editing area can only be composed of a single React element.',
     );
 
     if (React.Children.count(props.children)) {
       const child = React.Children.only(props.children);
       if (child?.type === 'textarea') throw new Error(
-        'Quill does not support editing on a <textarea>. Use a <div> instead.'
+        'Quill does not support editing on a <textarea>. Use a <div> instead.',
       );
     }
 
@@ -202,7 +213,7 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     ) throw new Error(
       'You are passing the `delta` object from the `onChange` event back ' +
       'as `value`. You most probably want `editor.getContents()` instead. ' +
-      'See: https://github.com/zenoamaro/react-quill#using-deltas'
+      'See: https://github.com/zenoamaro/react-quill#using-deltas',
     );
   }
 
@@ -266,15 +277,15 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     if (this.editor && this.shouldComponentRegenerate(prevProps)) {
       const delta = this.editor.getContents();
       const selection = this.editor.getSelection();
-      this.regenerationSnapshot = {delta, selection};
-      this.setState({generation: this.state.generation + 1});
+      this.regenerationSnapshot = { delta, selection };
+      this.setState({ generation: this.state.generation + 1 });
       this.destroyEditor();
     }
 
     // The component has been regenerated, so it must be re-instantiated, and
     // its content must be restored to the previous values from the snapshot.
     if (this.state.generation !== prevState.generation) {
-      const {delta, selection} = this.regenerationSnapshot!;
+      const { delta, selection } = this.regenerationSnapshot!;
       delete this.regenerationSnapshot;
       this.instantiateEditor();
       const editor = this.editor!;
@@ -289,7 +300,7 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     } else {
       this.editor = this.createEditor(
         this.getEditingArea(),
-        this.getEditorConfig()
+        this.getEditorConfig(),
       );
     }
   }
@@ -325,9 +336,9 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
   }
 
   /**
-  Creates an editor on the given element. The editor will be passed the
-  configuration, have its events bound,
-  */
+   Creates an editor on the given element. The editor will be passed the
+   configuration, have its events bound,
+   */
   createEditor(element: Element, config: QuillOptions) {
     const editor = new Quill(element, config);
     if (config.tabIndex != null) {
@@ -384,7 +395,7 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     this.value = value;
     const sel = this.getEditorSelection();
     if (typeof value === 'string') {
-      editor.setContents(editor.clipboard.convert(value));
+      editor.setContents(editor.clipboard.convert({ html: value }));
     } else {
       editor.setContents(value);
     }
@@ -396,8 +407,8 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     if (range) {
       // Validate bounds before applying.
       const length = editor.getLength();
-      range.index = Math.max(0, Math.min(range.index, length-1));
-      range.length = Math.max(0, Math.min(range.length, (length-1) - range.index));
+      range.index = Math.max(0, Math.min(range.index, length - 1));
+      range.length = Math.max(0, Math.min(range.length, (length - 1) - range.index));
       editor.setSelection(range);
     }
   }
@@ -423,12 +434,12 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
   makeUnprivilegedEditor(editor: Quill) {
     const e = editor;
     return {
-      getHTML:      () => e.root.innerHTML,
-      getLength:    e.getLength.bind(e),
-      getText:      e.getText.bind(e),
-      getContents:  e.getContents.bind(e),
+      getHTML: () => e.root.innerHTML,
+      getLength: e.getLength.bind(e),
+      getText: e.getText.bind(e),
+      getContents: e.getContents.bind(e),
       getSelection: e.getSelection.bind(e),
-      getBounds:    e.getBounds.bind(e),
+      getBounds: e.getBounds.bind(e),
     };
   }
 
@@ -450,26 +461,26 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
   Renders an editor area, unless it has been provided one to clone.
   */
   renderEditingArea(): JSX.Element {
-    const {children, preserveWhitespace} = this.props;
-    const {generation} = this.state;
+    const { children, preserveWhitespace } = this.props;
+    const { generation } = this.state;
 
     const properties = {
       key: generation,
       ref: (instance: React.ReactInstance | null) => {
-        this.editingArea = instance
+        this.editingArea = instance;
       },
     };
 
     if (React.Children.count(children)) {
       return React.cloneElement(
         React.Children.only(children)!,
-        properties
+        properties,
       );
     }
 
     return preserveWhitespace ?
-      <pre {...properties}/> :
-      <div {...properties}/>;
+      <pre {...properties} /> :
+      <div {...properties} />;
   }
 
   render() {
@@ -490,29 +501,29 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
 
   onEditorChange = (
     eventName: 'text-change' | 'selection-change',
-    rangeOrDelta: Range | DeltaStatic,
-    oldRangeOrDelta: Range | DeltaStatic,
+    rangeOrDelta: Range | Delta,
+    oldRangeOrDelta: Range | Delta,
     source: Sources,
   ) => {
     if (eventName === 'text-change') {
       this.onEditorChangeText?.(
         this.editor!.root.innerHTML,
-        rangeOrDelta as DeltaStatic,
+        rangeOrDelta as Delta,
         source,
-        this.unprivilegedEditor!
+        this.unprivilegedEditor!,
       );
     } else if (eventName === 'selection-change') {
       this.onEditorChangeSelection?.(
         rangeOrDelta as RangeStatic,
         source,
-        this.unprivilegedEditor!
+        this.unprivilegedEditor!,
       );
     }
   };
 
   onEditorChangeText(
     value: string,
-    delta: DeltaStatic,
+    delta: Delta,
     source: Sources,
     editor: UnprivilegedEditor,
   ): void {
